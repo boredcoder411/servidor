@@ -10,7 +10,7 @@ fn handle_client(mut stream: TcpStream) {
     println!("{}", request);
 
     if request.contains("GET / HTTP/1.1") {
-        let content = fs::read_to_string("index.html").unwrap();
+        let content = fs::read_to_string("./target/debug/index.html").unwrap();
 
         let response = format!(
             "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
