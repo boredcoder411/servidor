@@ -1,45 +1,48 @@
+use std::io::prelude::*;
 use std::net::{TcpListener, TcpStream};
-use std::io::{Read, Write};
 use std::fs;
+use std::env;
 
-fn handle_client(mut stream: TcpStream) {
-    let mut buffer = [0; 1024];
+fn handle_client(mut stream: TcpStream, file_path: &str) {
+    let mut buffer = [0; 512];
     stream.read(&mut buffer).unwrap();
-    let request = String::from_utf8_lossy(&buffer[..]);
 
-    println!("{}", request);
+    let response = "HTTP/1.1 200 OK\r\n\r\n";
+    let contents = fs::read_to_string(file_path).unwrap();
+    let response = format!("{}{}", response, contents);
 
-    if request.contains("GET / HTTP/1.1") {
-        let content = fs::read_to_string("./target/debug/index.html").unwrap();
-
-        let response = format!(
-            "HTTP/1.1 200 OK\r\nContent-Length: {}\r\n\r\n{}",
-            content.len(),
-            content
-        );
-
-        stream.write(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
-    } else {
-        let response = "HTTP/1.1 404 NOT FOUND\r\n\r\n";
-        stream.write(response.as_bytes()).unwrap();
-        stream.flush().unwrap();
-    }
+    stream.write(response.as_bytes()).unwrap();
+    stream.flush().unwrap();
 }
 
 fn main() {
-    let listener = TcpListener::bind("127.0.0.1:8080").unwrap();
-    println!("Server listening on port 8080");
+    let args: Vec<String> = env::args().collect();
+    let (addr, file_path) = match args.get(1) {
+        Some(port_str) => {
+            let port = port_str.parse::<u16>().unwrap();
+            let addr = format!("127.0.0.1:{}", port);
+            let file_path = match args.get(2) {
+                Some(path) => path,
+                None => {
+                    eprintln!("Usage: server <port> <file_path>");
+                    return;
+                }
+            };
+            (addr, file_path)
+        }
+        None => {
+            eprintln!("Usage: server <port> <file_path>");
+            return;
+        }
+    };
+
+    let listener = TcpListener::bind(&addr).unwrap();
+
+    println!("Server listening on {}", addr);
 
     for stream in listener.incoming() {
-        match stream {
-            Ok(stream) => {
-                println!("New connection: {}", stream.peer_addr().unwrap());
-                handle_client(stream);
-            }
-            Err(e) => {
-                println!("Error: {}", e);
-            }
-        }
+        let stream = stream.unwrap();
+
+        handle_client(stream, file_path);
     }
 }
