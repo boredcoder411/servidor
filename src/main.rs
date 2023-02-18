@@ -24,14 +24,14 @@ fn main() {
             let file_path = match args.get(2) {
                 Some(path) => path,
                 None => {
-                    eprintln!("Usage: server <port> <file_path>");
+                    eprintln!("Usage: servidor <port> <file_path>");
                     return;
                 }
             };
             (addr, file_path)
         }
         None => {
-            eprintln!("Usage: server <port> <file_path>");
+            eprintln!("Usage: servidor <port> <file_path>");
             return;
         }
     };
